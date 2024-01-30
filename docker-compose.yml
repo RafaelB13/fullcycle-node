@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+  node:
+    build:
+      context: ./nodejs
+      dockerfile: Dockerfile
+    image: rafaelb13/fullcycle-node
+    container_name: node-app
+    tty: true
+    networks:
+      - node-nginx
+    depends_on:
+      db:
+        condition: service_healthy
+  
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: rafaelb13/fullcycle-nginx
+    container_name: nginx
+    networks:
+      - node-nginx
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:latest
+    container_name: db
+    tty: true
+    # volumes: 
+    #   - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=nodedb
+    networks:
+      - node-nginx
+    # APÓS ESSA CHECAGEM ELE INICIA O NODE E O NGINX
+    healthcheck:
+      test: "/usr/bin/mysql --user=root --password=nodedb --execute \"SHOW DATABASES;\""
+      interval: 2s
+      timeout: 20s
+      retries: 10
+
+networks:
+  node-nginx:
+    driver: bridge
+    
